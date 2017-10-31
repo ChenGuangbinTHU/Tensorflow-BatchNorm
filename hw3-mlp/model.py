@@ -11,13 +11,12 @@ class Model:
         self.x_ = tf.placeholder(tf.float32, [None, 28*28])
         self.y_ = tf.placeholder(tf.int32, [None])
         self.keep_prob = tf.placeholder(tf.float32)
+        self.is_train = is_train
         # tf.reset_default_graph()
         # TODO:  implement input -- Linear -- BN -- ReLU -- Linear -- loss
         #        the 10-class prediction output is named as "logits"
         rows, columns = map(lambda i: i.value, self.x_.get_shape())
-        print(rows,columns)
-        print(self.x_.shape)
-        l1 = add_layer(self.x_,784,392,tf.nn.relu)
+        l1 = add_layer(self.x_,784,392,tf.nn.relu,self.is_train)
         # l2 = add_layer(l1,392,200,tf.nn.relu)
         # l3 = add_layer(l2,200,100,tf.nn.relu)
         # print(l1.get_shape())
@@ -27,7 +26,7 @@ class Model:
         
         # mean.eval()
         # variance.eval()
-        logits = add_layer(l1,392,10,None)
+        logits = add_layer(l1,392,10,None,self.is_train)
         # print(logits.get_shape())
         # exit(0)
 
@@ -50,13 +49,14 @@ class Model:
                                     max_to_keep=3, pad_step_number=True, keep_checkpoint_every_n_hours=1.0)
 
 
-def add_layer(inp,in_size,out_size,active_function):
+def add_layer(inp,in_size,out_size,active_function,isTrain=True):
     Weight = weight_variable([in_size,out_size])
     bias = bias_variable([out_size])
 
 
     Wx_plus_b = tf.matmul(inp,Weight) + bias
-    Wx_plus_b = batch_normalization_layer(Wx_plus_b)
+    Wx_plus_b = batch_normalization_layer(Wx_plus_b,isTrain)
+    print(isTrain)
     if active_function is None:
         output = Wx_plus_b
     else:
@@ -72,19 +72,37 @@ def bias_variable(shape):  # you can use this func to build new variables
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
 
-
-def batch_normalization_layer(inputs, isTrain=False):
+#isTarin -> self.isTrain
+def batch_normalization_layer(inputs, isTrain=True):
     # TODO: implemented the batch normalization func and applied it on fully-connected layers
     
     in_size, out_size = inputs.get_shape()
-    mean, var = tf.nn.moments(inputs,[0])
+    
     scale = tf.Variable(tf.ones([out_size]))
     shift = tf.Variable(tf.ones([out_size]))
     eps = 0.001
-    if isTrain:
-        inputs = tf.nn.batch_normalization(inputs,mean,var,shift,scale,eps)
-    else:
-        print('fuck')
+    decay = 0.999
+    # moving_mean = tf.Variable(tf.zeros([out_size]))
+    # moving_var = tf.Variable(tf.zeros([out_size]))
+    # if isTrain:
+    #     mean, var = tf.nn.moments(inputs,[0])
+    #     update_moving_mean = tf.train.moving
+    #     # inputs = tf.nn.batch_normalization(inputs,mean,var,shift,scale,eps)
+    # else:
+    #     print('fuck')
+    print(isTrain)
+    fc_mean, fc_var = tf.nn.moments(
+        inputs,
+        axes=[0],
+    )
+    ema = tf.train.ExponentialMovingAverage(decay=0.5)  # exponential moving average 的 decay 度
+    def mean_var_with_update():
+        ema_apply_op = ema.apply([fc_mean, fc_var])
+        with tf.control_dependencies([ema_apply_op]):
+            return tf.identity(fc_mean), tf.identity(fc_var)
+    mean, var = tf.cond(tf.cast(isTrain,tf.bool),mean_var_with_update,lambda: (ema.average(fc_mean),ema.average(fc_var)))
+    # if isTrain:
+    #     inputs = tf.nn.batch_normalization(inputs, mean, var, shift, scale, eps)
     return inputs
 
 

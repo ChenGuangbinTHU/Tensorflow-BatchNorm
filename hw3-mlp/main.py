@@ -119,11 +119,14 @@ with tf.Session() as sess:
 
     else:
         mlp_model = Model(False)
+        # mlp_model.isTrain = False
         if FLAGS.inference_version == 0:  # Load the checkpoint
             model_path = tf.train.latest_checkpoint(FLAGS.train_dir)
         else:
             model_path = '%s/checkpoint-%08d' % (FLAGS.train_dir, FLAGS.inference_version)
+        print(model_path)
         mlp_model.saver.restore(sess, model_path)
+       
         X_train, X_test, y_train, y_test = load_mnist_2d(FLAGS.data_dir)  # load_mnist_2d when implementing MLP
 
         count = 0

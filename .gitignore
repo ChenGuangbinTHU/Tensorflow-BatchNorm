@@ -1,3 +1,7 @@
 *.pdf
 __MACOSX/
 .idea/
+train/
+__pycache__/
+MNIST_data/
+
