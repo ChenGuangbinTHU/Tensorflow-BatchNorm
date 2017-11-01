@@ -4,4 +4,5 @@ __MACOSX/
 train/
 __pycache__/
 MNIST_data/
-
+*/train/
+*/MNIST_data/
