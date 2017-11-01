@@ -13,10 +13,28 @@ class Model:
         self.keep_prob = tf.placeholder(tf.float32)
 
         x = tf.reshape(self.x_, [-1, 28, 28, 1])
+        W_conv1 = weight_variable([3, 3, 1, 4])
+        b_conv1 = bias_variable([4])
+        h_conv1 = tf.nn.relu(conv2d(x, W_conv1) + b_conv1)
+        h_pool1 = pooling(h_conv1)
+
+        print(h_pool1.get_shape())
+
+        W_conv2 = weight_variable([4, 4, 4, 4])
+        b_conv2 = bias_variable([4])
+        h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+        h_pool2 = pooling(h_conv2)
+
+        print(h_pool2.get_shape())
+
+        h_pool2_reshape = tf.reshape(h_pool2, [-1,4*5*5])
+        W_l = weight_variable([4*5*5, 10])
+        b_l = bias_variable([10])
+        logits = tf.matmul(h_pool2_reshape, W_l) + b_l
 
         # TODO: implement input -- Conv -- BN -- ReLU -- MaxPool -- Conv -- BN -- ReLU -- MaxPool -- Linear -- loss
         #        the 10-class prediction output is named as "logits"
-        logits = tf.Variable(tf.constant(0.0, shape=[100, 10]))  # deleted this line after you implement above layers
+        # logits = tf.Variable(tf.constant(0.0, shape=[100, 10]))  # deleted this line after you implement above layers
 
         self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y_, logits=logits))
         self.correct_pred = tf.equal(tf.cast(tf.argmax(logits, 1), tf.int32), self.y_)
@@ -35,6 +53,11 @@ class Model:
         self.saver = tf.train.Saver(tf.global_variables(), write_version=tf.train.SaverDef.V2,
                                     max_to_keep=3, pad_step_number=True, keep_checkpoint_every_n_hours=1.0)
 
+def conv2d(x, W) :
+    return tf.nn.conv2d(x, W, [1,1,1,1], padding='VALID')
+
+def pooling(x) :
+    return tf.nn.max_pool(x, ksize=[1,2,2,1], strides=[1,2,2,1], padding='VALID')
 
 def weight_variable(shape):  # you can use this func to build new variables
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -44,6 +67,8 @@ def weight_variable(shape):  # you can use this func to build new variables
 def bias_variable(shape):  # you can use this func to build new variables
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
+
+
 
 
 def batch_normalization_layer(inputs, isTrain=True):
