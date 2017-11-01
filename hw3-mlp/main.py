@@ -61,6 +61,7 @@ def valid_epoch(model, sess, X, y):  # Valid Process
         X_batch, y_batch = X[st:ed], y[st:ed]
         feed = {model.x_: X_batch, model.y_: y_batch, model.keep_prob: 1.0}
         loss_, acc_ = sess.run([model.loss, model.acc], feed)
+        # print(len(sess.run(tf.get_collection('best_mean'),feed)[1]))
         loss += loss_
         acc += acc_
         st, ed = ed, ed+FLAGS.batch_size
@@ -78,6 +79,7 @@ with tf.Session() as sess:
     if not os.path.exists(FLAGS.train_dir):
         os.mkdir(FLAGS.train_dir)
     if FLAGS.is_train:
+
         X_train, X_test, y_train, y_test = load_mnist_2d(FLAGS.data_dir)
         X_val, y_val = X_train[50000:], y_train[50000:]
         X_train, y_train = X_train[:50000], y_train[:50000]
@@ -86,7 +88,7 @@ with tf.Session() as sess:
             mlp_model.saver.restore(sess, tf.train.latest_checkpoint(FLAGS.train_dir))
         else:
             tf.global_variables_initializer().run()
-
+        
         pre_losses = [1e18] * 3
         best_val_acc = 0.0
         for epoch in range(FLAGS.num_epochs):

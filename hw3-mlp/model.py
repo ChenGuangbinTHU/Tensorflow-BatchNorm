@@ -72,38 +72,59 @@ def bias_variable(shape):  # you can use this func to build new variables
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
 
-#isTarin -> self.isTrain
+
 def batch_normalization_layer(inputs, isTrain=True):
-    # TODO: implemented the batch normalization func and applied it on fully-connected layers
-    
     in_size, out_size = inputs.get_shape()
-    
+    pop_mean = tf.Variable(tf.zeros([out_size]),trainable=False)
+    pop_var = tf.Variable(tf.ones([out_size]),trainable=False)
     scale = tf.Variable(tf.ones([out_size]))
-    shift = tf.Variable(tf.ones([out_size]))
+    shift = tf.Variable(tf.zeros([out_size]))
     eps = 0.001
     decay = 0.999
-    # moving_mean = tf.Variable(tf.zeros([out_size]))
-    # moving_var = tf.Variable(tf.zeros([out_size]))
-    # if isTrain:
-    #     mean, var = tf.nn.moments(inputs,[0])
-    #     update_moving_mean = tf.train.moving
-    #     # inputs = tf.nn.batch_normalization(inputs,mean,var,shift,scale,eps)
-    # else:
-    #     print('fuck')
-    print(isTrain)
-    fc_mean, fc_var = tf.nn.moments(
-        inputs,
-        axes=[0],
-    )
-    ema = tf.train.ExponentialMovingAverage(decay=0.5)  # exponential moving average 的 decay 度
-    def mean_var_with_update():
-        ema_apply_op = ema.apply([fc_mean, fc_var])
-        with tf.control_dependencies([ema_apply_op]):
-            return tf.identity(fc_mean), tf.identity(fc_var)
-    mean, var = tf.cond(tf.cast(isTrain,tf.bool),mean_var_with_update,lambda: (ema.average(fc_mean),ema.average(fc_var)))
-    # if isTrain:
-    #     inputs = tf.nn.batch_normalization(inputs, mean, var, shift, scale, eps)
-    return inputs
+    if isTrain:
+        batch_mean, batch_var = tf.nn.moments(inputs,[0])
+        train_mean = tf.assign(pop_mean, pop_mean * decay + batch_mean * (1-decay))
+        train_var = tf.assign(pop_var, pop_var * decay + batch_var * (1-decay))
+        with tf.control_dependencies([train_mean,train_var]):
+            return tf.nn.batch_normalization(inputs,batch_mean,batch_var,shift,scale,eps)
+    else:
+        return tf.nn.batch_normalization(inputs,pop_mean,pop_var,shift,scale,eps)
+    # return inputs
+
+
+#isTarin -> self.isTrain
+# def batch_normalization_layer(inputs, isTrain=True):
+#     # TODO: implemented the batch normalization func and applied it on fully-connected layers
+    
+#     in_size, out_size = inputs.get_shape()
+    
+#     scale = tf.Variable(tf.ones([out_size]))
+#     shift = tf.Variable(tf.ones([out_size]))
+#     eps = 0.001
+#     decay = 0.999
+#     print(isTrain)
+#     if isTrain:
+#         batch_mean, batch_var = tf.nn.moments(
+#             inputs,
+#             axes=[0],
+#         )
+#         global_mean = tf.assign(pop_mean,pop_mean*decay)
+#     else:
+#         fc_mean = self.best_mean
+#         fc_var = self.best_var
+#     print(fc_mean.get_shape())
+#     tf.add_to_collection('best_mean',fc_mean)
+#     scale = tf.Variable(tf.ones([out_size]))
+#     shift = tf.Variable(tf.zeros([out_size]))
+#     inputs = tf.nn.batch_normalization(inputs, fc_mean, fc_var, shift, scale, eps)
+#     # ema = tf.train.ExponentialMovingAverage(decay=0.5)  # exponential moving average 的 decay 度
+#     # def mean_var_with_update():
+#     #     ema_apply_op = ema.apply([fc_mean, fc_var])
+#     #     with tf.control_dependencies([ema_apply_op]):
+#     #         return tf.identity(fc_mean), tf.identity(fc_var)
+#     # mean, var = tf.cond(tf.cast(isTrain,tf.bool),mean_var_with_update,lambda: (ema.average(fc_mean),ema.average(fc_var)))
+
+#     return inputs,tmp_mean,tmp_var
 
 
 
