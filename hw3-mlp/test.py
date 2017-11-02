@@ -2,24 +2,11 @@ import tensorflow as tf;
 import numpy as np;    
 import matplotlib.pyplot as plt;    
   
-v1 = tf.get_variable(name='v1', shape=[1], initializer=tf.constant_initializer(0))  
- 
-v2 = tf.get_variable(name='v2', shape=[1], initializer=tf.constant_initializer(2))  
+A = np.arange(96)
 
-v3 = tf.get_variable(name='v3', shape=[1], initializer=tf.constant_initializer(3))  
-
-v4 = tf.get_variable(name='v4', shape=[1], initializer=tf.constant_initializer(4))  
-
-  
-with tf.Session() as sess:  
-    sess.run(tf.initialize_all_variables())  
-    tf.add_to_collection('loss', v1) 
-    tf.add_to_collection('loss', v2)   
-    print tf.get_collection('loss')  
-    print sess.run(tf.get_collection('loss'))
+B = np.reshape(A,[3,2,4,4])
+C = np.reshape(A,[24,4]) 
 with tf.Session() as sess:
-    sess.run(tf.initialize_all_variables())  
-    tf.add_to_collection('loss', v3) 
-    tf.add_to_collection('loss', v4)   
-    print tf.get_collection('loss')  
-    print sess.run(tf.get_collection('loss')) 
+    data_tf = tf.convert_to_tensor(C, np.float32)
+    print(sess.run(tf.nn.moments(data_tf,(0))))
+    # print(np.mean(C,[1]))

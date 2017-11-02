@@ -128,6 +128,7 @@ with tf.Session() as sess:
         for i in range(len(X_test)):
             test_image = X_test[i].reshape((1, 1, 28, 28))
             result = inference(cnn_model, sess, test_image)[0]
+            # print(result, y_test[i])
             if result == y_test[i]:
                 count += 1
         print("test accuracy: {}".format(float(count) / len(X_test)))

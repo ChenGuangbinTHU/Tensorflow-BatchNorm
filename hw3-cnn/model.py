@@ -11,18 +11,19 @@ class Model:
         self.x_ = tf.placeholder(tf.float32, [None, 1, 28, 28])
         self.y_ = tf.placeholder(tf.int32, [None])
         self.keep_prob = tf.placeholder(tf.float32)
+        self.is_train = is_train
 
         x = tf.reshape(self.x_, [-1, 28, 28, 1])
         W_conv1 = weight_variable([3, 3, 1, 4])
         b_conv1 = bias_variable([4])
-        h_conv1 = tf.nn.relu(conv2d(x, W_conv1) + b_conv1)
+        h_conv1 = tf.nn.relu(batch_normalization_layer(conv2d(x, W_conv1) + b_conv1, 4, self.is_train))
         h_pool1 = pooling(h_conv1)
 
         print(h_pool1.get_shape())
 
         W_conv2 = weight_variable([4, 4, 4, 4])
         b_conv2 = bias_variable([4])
-        h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+        h_conv2 = tf.nn.relu(batch_normalization_layer(conv2d(h_pool1, W_conv2) + b_conv2, 4, self.is_train))
         h_pool2 = pooling(h_conv2)
 
         print(h_pool2.get_shape())
@@ -69,9 +70,25 @@ def bias_variable(shape):  # you can use this func to build new variables
     return tf.Variable(initial)
 
 
+def batch_normalization_layer(inputs, out_size, isTrain=True):
+    # in_size, out_size = inputs.get_shape()
+    pop_mean = tf.Variable(tf.zeros([out_size]),trainable=False)
+    pop_var = tf.Variable(tf.ones([out_size]),trainable=False)
+    scale = tf.Variable(tf.ones([out_size]))
+    shift = tf.Variable(tf.zeros([out_size]))
+    eps = 0.001
+    decay = 0.999
+    if isTrain:
+        batch_mean, batch_var = tf.nn.moments(inputs,[0,1,2])
+        print(batch_mean.get_shape())
+        train_mean = tf.assign(pop_mean, pop_mean * decay + batch_mean * (1-decay))
+        train_var = tf.assign(pop_var, pop_var * decay + batch_var * (1-decay))
+        with tf.control_dependencies([train_mean,train_var]):
+            return tf.nn.batch_normalization(inputs,batch_mean,batch_var,shift,scale,eps)
+    else:
+        return tf.nn.batch_normalization(inputs,pop_mean,pop_var,shift,scale,eps)
 
-
-def batch_normalization_layer(inputs, isTrain=True):
-    # TODO: implemented the batch normalization func and applied it on conv and fully-connected layers
-    # hint: you can add extra parameters (e.g., shape) if necessary
-    return inputs
+# def batch_normalization_layer(inputs, isTrain=True):
+#     # TODO: implemented the batch normalization func and applied it on conv and fully-connected layers
+#     # hint: you can add extra parameters (e.g., shape) if necessary
+#     return inputs
