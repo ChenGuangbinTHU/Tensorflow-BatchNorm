@@ -43,6 +43,7 @@ def train_epoch(model, sess, X, y):
         X_batch, y_batch = X[st:ed], y[st:ed]
         feed = {model.x_: X_batch, model.y_: y_batch, model.keep_prob: FLAGS.keep_prob}
         loss_, acc_, _ = sess.run([model.loss, model.acc, model.train_op], feed)
+        # sess.run(model.train_op_BN,feed)
         loss += loss_
         acc += acc_
         st, ed = ed, ed+FLAGS.batch_size
@@ -83,6 +84,9 @@ with tf.Session() as sess:
         if tf.train.get_checkpoint_state(FLAGS.train_dir):
             cnn_model.saver.restore(sess, tf.train.latest_checkpoint(FLAGS.train_dir))
         else:
+            merged = tf.summary.merge_all()
+
+            writer = tf.summary.FileWriter("logs/", sess.graph)
             tf.global_variables_initializer().run()
 
         pre_losses = [1e18] * 3
@@ -90,6 +94,9 @@ with tf.Session() as sess:
         for epoch in range(FLAGS.num_epochs):
             start_time = time.time()
             train_acc, train_loss = train_epoch(cnn_model, sess, X_train, y_train)
+            if epoch%1 == 0:
+                rs = sess.run(merged,feed_dict = {cnn_model.x_: X_train,cnn_model.y_: y_train, cnn_model.keep_prob: FLAGS.keep_prob})
+                writer.add_summary(rs, epoch)
             X_train, y_train = shuffle(X_train, y_train, 1)
 
             val_acc, val_loss = valid_epoch(cnn_model, sess, X_val, y_val)
@@ -125,10 +132,17 @@ with tf.Session() as sess:
         X_train, X_test, y_train, y_test = load_mnist_4d(FLAGS.data_dir)
 
         count = 0
+        d = {}
         for i in range(len(X_test)):
             test_image = X_test[i].reshape((1, 1, 28, 28))
             result = inference(cnn_model, sess, test_image)[0]
             # print(result, y_test[i])
             if result == y_test[i]:
                 count += 1
+            else:
+                if result in d:
+                    d[result] += 1
+                else:
+                    d[result] = 1
+        print(d)
         print("test accuracy: {}".format(float(count) / len(X_test)))
