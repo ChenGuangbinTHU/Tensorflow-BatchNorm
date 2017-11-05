@@ -6,3 +6,6 @@ __pycache__/
 MNIST_data/
 */train/
 */MNIST_data/
+*.png
+*/logs/
+logs/
